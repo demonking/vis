@@ -1,80 +1,19 @@
 language: c
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "HODXcDA8ScUAwsJnGCroF0D0G3uvYKXYF7JwgMTq+/WArZQ8pHXrrQFN/W+GBYdWzL9lUkksPQro6kibB71oixWZ3WdF71IaoDtISP/8T3FnKq4D8/H11C3P/aZXgAD9j2gzhiwlBPw180EKyLnoNkQLkklQHgtqeCFf8zgCJeM="
 
-matrix:
-  include:
-    - os: linux
-      compiler: gcc
-      env: TARGET=
-    - os: linux
-      compiler: gcc
-      env: TARGET=debug
-    - os: linux
-      compiler: gcc
-      env: TARGET=coverage
-    - os: linux
-      compiler: clang
-      env: TARGET=
-    - os: linux
-      compiler: clang
-      env: TARGET=debug
-    - os: osx
-      compiler: clang
-      env: TARGET=
-    - os: osx
-      compiler: clang
-      env: TARGET=debug
-    - os: osx
-      compiler: clang
-      env: TARGET=coverage
+install: make local
+
+script: true
 
 addons:
-  apt:
-    packages:
-    - 9base
-
-cache:
-  directories:
-    - $HOME/.cache/vis
-
-before_install:
-  - mkdir -p "$HOME/.cache/vis/sources" && mkdir dependency && ln -s "$HOME/.cache/vis/sources" dependency/sources
-
-install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      brew update &&
-      brew install libtermkey &&
-      brew install lua &&
-      luarocks install lpeg;
-      if [ "$TARGET" = "coverage" ]; then
-        brew install plan9port;
-      fi
-    fi
-
-script:
-  - id
-  - env
-  - locale
-  - tty || true
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      ./configure && make $TARGET;
-    else
-      make local && make clean && make $TARGET;
-    fi
-  - file vis
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      otool -L vis;
-    else
-      ldd vis;
-    fi
-  - size vis
-  - LD_LIBRARY_PATH="$(pwd)/dependency/install/usr/lib" ./vis -v
-  - LD_LIBRARY_PATH="$(pwd)/dependency/install/usr/lib" make -C test/core $TARGET
-  - LD_LIBRARY_PATH="$(pwd)/dependency/install/usr/lib" make -C test/lua
-  - LD_LIBRARY_PATH="$(pwd)/dependency/install/usr/lib" make -C test/vis
-  - LD_LIBRARY_PATH="$(pwd)/dependency/install/usr/lib" make -C test/sam
-  - LD_LIBRARY_PATH="$(pwd)/dependency/install/usr/lib" make -C test/vim
-
-after_success:
-  - if [ "$TARGET" = "coverage" ]; then
-      bash <(curl -s https://codecov.io/bash);
-    fi
+  coverity_scan:
+    project:
+      name: "martanne/vis"
+    notification_email: mat@brain-dump.org
+    build_command_prepend:
+    build_command: make local
+    branch_pattern: coverity_scan
